@@ -33,24 +33,30 @@ const PopularBooks=()=>{
             </View>
             
             <View style={styles.cardsContainer}>
-                {isLoading?(
-                <ActivityIndicator size="large" color={COLORS.primary} />
-                ):error?(
-                <Text>Something went wrong</Text>
-                ):(
-                <FlatList
-                    data={data}
-                    renderItem={({item})=>(
-                    <PopularBookCard 
-                        item={item}
-                        selectedBook={selectedBook}
-                        handleCardPress={handleCardPress}
-                    />
-                    )}
-                    keyExtractor={(item)=>item.key}
-                    contentContainerStyle={{columnGap:SIZES.medium}}
-                    horizontal
-                />
+                {isLoading ? (
+                    <ActivityIndicator size="large" color={COLORS.primary} />
+                ) : error ? (
+                    <Text>Something went wrong</Text>
+                ) : (
+                    data?.map((book) => {
+                    const workId = book.key.split("/").pop(); // "OL21177W"
+
+                    return (
+                        <PopularBookCard
+                        item={book}
+                        key={book.key}
+                        handleCardPress={() =>
+                            router.push({
+                            pathname: "/book-details/[id]",
+                            params: {
+                                id: workId,                 // goes into [id].js
+                                editionKey: book.cover_edition_key, // "OL38586477M"
+                            },
+                            })
+                        }
+                        />
+                    );
+                    })
                 )}
             </View>
         </View>
