@@ -1,3 +1,4 @@
+// components/.../BookBrief.jsx
 import React, { useEffect, useState } from "react";
 import { View, Text, Image } from "react-native";
 
@@ -39,10 +40,10 @@ const getAuthors = async (authorsArray) => {
   }
 };
 
-const BookBrief = ({ book }) => {
+const BookBrief = ({ book, onAuthorsLoaded }) => {
   const [authorNames, setAuthorNames] = useState("Loading author...");
 
-  // Build cover URL from last cover
+  // Build cover URL from first/last cover
   const covers = book?.covers;
   const fallbackLogo =
     "https://t4.ftcdn.net/jpg/05/05/61/73/360_F_505617309_NN1CW7diNmGXJfMicpY9eXHKV4sqzO5H.jpg";
@@ -62,6 +63,10 @@ const BookBrief = ({ book }) => {
       const names = await getAuthors(book?.authors || []);
       if (!isCancelled) {
         setAuthorNames(names);
+        // 🔑 tell the parent (BookDetails) about the final string
+        if (onAuthorsLoaded) {
+          onAuthorsLoaded(names);
+        }
       }
     };
 
@@ -70,17 +75,14 @@ const BookBrief = ({ book }) => {
     return () => {
       isCancelled = true;
     };
-  }, [book?.authors]);
+  }, [book?.authors, onAuthorsLoaded]);
 
-  const authorNameList = authorNames; // use author names as "companyName"
+  const authorNameList = authorNames;
 
   return (
     <View style={styles.container}>
       <View style={styles.logoBox}>
-        <Image
-          source={{ uri: bookLogo }}
-          style={styles.logoImage}
-        />
+        <Image source={{ uri: bookLogo }} style={styles.logoImage} />
       </View>
 
       <View style={styles.bookTitleBox}>

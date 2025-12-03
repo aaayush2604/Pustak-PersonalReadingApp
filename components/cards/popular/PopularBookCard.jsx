@@ -4,7 +4,7 @@ import { View, Text, TouchableOpacity, Image } from 'react-native'
 import styles from './popularbookcard.style'
 
 const PopularBookCard = ({item,selectedBook,handleCardPress}) => {
-  console.log("Popular Book Card Item:", item);
+  
   return (
     <TouchableOpacity 
       style={styles.container}

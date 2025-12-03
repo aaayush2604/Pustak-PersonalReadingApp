@@ -4,16 +4,15 @@ import {
   ScrollView,
   ActivityIndicator,
   RefreshControl,
-  TouchableOpacity
+  TouchableOpacity,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, useRouter, useLocalSearchParams } from "expo-router";
-import { use, useCallback, useState } from "react";
+import { useCallback, useState } from "react";
 
 import {
   BookBrief,
   BookDescription,
-  JobFooter,
   BookTabs,
   ScreenHeaderBtn,
   Specifics,
@@ -22,6 +21,8 @@ import { COLORS, SIZES, icons, FONT } from "../../constants";
 import useFetchDescription from "../../hook/useFetchDescription";
 
 import { useReadingStore } from "../../hook/useReadingStore";
+import { useToast, POSTION } from "expo-toast";
+
 
 const tabs = ["Description", "Excerpts", "Characters"];
 
@@ -32,66 +33,110 @@ const BookDetails = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState(tabs[0]);
 
-  const { setCurrentlyReading } = useReadingStore();
+  const { setCurrentlyReading, addToTBR } = useReadingStore();
+  const [authorNames, setAuthorNames] = useState("Unknown Author");
+
+  const { data, isLoading, error, refetch } = useFetchDescription({
+    workKey: params.id,
+    editionKey: params.editionKey,
+  });
+
+  const toast = useToast();
+
+
+  // build a normalized book object for store (TBR + currentlyReading)
+  const buildBookForStore = () => {
+    if (!data) return null;
+
+    const workKeyFull = data.key || "";
+    const workKey =
+      workKeyFull.split("/").filter(Boolean).pop() || params.id;
+
+    let coverUrl = null;
+    if (Array.isArray(data.covers) && data.covers.length > 0) {
+      const lastCoverId = data.covers[data.covers.length - 1];
+      coverUrl = `https://covers.openlibrary.org/b/id/${lastCoverId}-L.jpg`;
+    }
+
+    // turn "Author1, Author2" into ["Author1", "Author2"]
+    const authorsArray =
+      authorNames && authorNames !== "Unknown Author"
+        ? authorNames.split(",").map((s) => s.trim())
+        : [];
+
+    return {
+      workKey,
+      editionKey: params.editionKey,
+      title: data.title,
+      authors: authorsArray,
+      coverUrl,
+      totalPages: data.edition?.number_of_pages,
+      currentPage: 0,
+    };
+  };
+
+  const handleStartReading = () => {
+    const book = buildBookForStore();
+    if (!book) return;
+    setCurrentlyReading(book);
+    toast.show("Updated to Currently Reading", {
+      position: POSTION.BOTTOM,
+      duration: 1500,
+      containerStyle: { marginBottom: 40 },
+    });
+  };
+
+  const handleAddToTBR = () => {
+    const book = buildBookForStore();
+    if (!book) return;
+    addToTBR(book);
+    toast.show("Added to TBR", {
+      position: POSTION.BOTTOM,           // 👈 bottom
+      duration: 1500,                     // ms
+      containerStyle: { marginBottom: 40 } // 👈 push it further up
+    });
+  };
 
   const displayTabContent = () => {
-    console.log(data);
+    if (!data) return null;
+
     switch (activeTab) {
       case "Excerpts":
         return (
           <Specifics
             title="Excerpts"
-            points={data.excerpts?.map((item) => item.excerpt) ?? ["N/A"]}
+            points={
+              Array.isArray(data.excerpts) && data.excerpts.length > 0
+                ? data.excerpts.map((item) => item.excerpt)
+                : ["N/A"]
+            }
           />
         );
       case "Description":
         return (
-          <BookDescription info={data.description?? "No data provided"} />
+          <BookDescription info={data.description ?? "No data provided"} />
         );
       case "Characters":
         return (
           <Specifics
             title="Characters"
-            points={data.subject_people}
+            points={
+              Array.isArray(data.subject_people) && data.subject_people.length > 0
+                ? data.subject_people
+                : ["N/A"]
+            }
           />
         );
       default:
-        break;
+        return null;
     }
-  };
-
-  const handleStartReading = () => {
-    const book = {
-      workKey: data.key || params.id,            // "/works/OL138052W" or "OL138052W"
-      editionKey: params.editionKey,
-      title: data.title,
-      authors: data.authors,         // whatever you already computed
-      coverUrl: `https://covers.openlibrary.org/b/id/${data.covers[0]}-L.jpg`,           
-      totalPages: data.edition?.number_of_pages, // if you fetched edition
-      currentPage: 0,
-    };
-
-    setCurrentlyReading(book);
   };
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    refetch();
+    refetch && refetch();
     setRefreshing(false);
-  }, []);
-
-  const { data, isLoading, error } = useFetchDescription({
-    workKey: params.id,
-    editionKey: params.editionKey,
-  });
-
-  let coverUrl = null;
-
-  if (Array.isArray(data?.covers) && data.covers.length > 0) {
-    const lastCoverId = data.covers[data.covers.length - 1]; // 👈 last cover
-    coverUrl = `https://covers.openlibrary.org/b/id/${data.covers[0]}-L.jpg`;
-  }
-
+  }, [refetch]);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.lightWhite }}>
@@ -111,50 +156,91 @@ const BookDetails = () => {
             <ScreenHeaderBtn
               iconUrl={icons.share}
               dimension="60%"
-              handlePress={() => router.back}
+              handlePress={() => {}}
             />
           ),
           headerTitle: "",
         }}
       />
 
-      <>
-        <ScrollView
-          showsHorizontalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-        >
-          {isLoading ? (
-            <ActivityIndicator size="large" color={COLORS.primary} />
-          ) : error ? (
-            <Text>Something went wrong</Text>
-          ) : data.length === 0 ? (
-            <Text>No data available</Text>
-          ) : (
-            <View style={{ padding: SIZES.medium, paddingBottom: 100 }}>
-              <BookBrief
-                book={data}
-              />
-              <BookTabs
-                tabs={tabs}
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-              />
-              {displayTabContent()}
-              {/* <Button title="Start Reading" onPress={handleStartReading} /> */}
-              <TouchableOpacity style={{flex: 1, backgroundColor: COLORS.tertiary, height: "100%", justifyContent: "center",alignItems: "center",marginLeft: SIZES.medium,borderRadius: SIZES.medium}} onPress={handleStartReading}>
-                <Text style={{ fontSize: SIZES.medium,color: COLORS.cream,fontFamily: FONT.bold,}}>Start Reading</Text>
+      <ScrollView
+        showsHorizontalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        {isLoading ? (
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        ) : error ? (
+          <Text>Something went wrong</Text>
+        ) : !data ? (
+          <Text>No data available</Text>
+        ) : (
+          <View style={{ padding: SIZES.medium, paddingBottom: 100 }}>
+            <BookBrief book={data} onAuthorsLoaded={setAuthorNames}/>
+
+            <BookTabs
+              tabs={tabs}
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+            />
+
+            {displayTabContent()}
+
+            <View
+              style={{
+                flexDirection: "row",
+                marginTop: SIZES.large,
+                gap: SIZES.medium,
+              }}
+            >
+              <TouchableOpacity
+                style={{
+                  flex: 1,
+                  backgroundColor: COLORS.tertiary,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  paddingVertical: SIZES.small,
+                  borderRadius: SIZES.medium,
+                }}
+                onPress={handleStartReading}
+              >
+                <Text
+                  style={{
+                    fontSize: SIZES.medium,
+                    color: COLORS.cream,
+                    fontFamily: FONT.bold,
+                  }}
+                >
+                  Start Reading
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={{
+                  flex: 1,
+                  backgroundColor: COLORS.primary,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  paddingVertical: SIZES.small,
+                  borderRadius: SIZES.medium,
+                }}
+                onPress={handleAddToTBR}
+              >
+                <Text
+                  style={{
+                    fontSize: SIZES.medium,
+                    color: COLORS.cream,
+                    fontFamily: FONT.bold,
+                  }}
+                >
+                  Add to TBR
+                </Text>
               </TouchableOpacity>
             </View>
-          )}
-        </ScrollView>
-        <JobFooter
-          url={
-            data[0]?.job_google_link ?? "https://careers.google.com/job/results"
-          }
-        />
-      </>
+          </View>
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 };

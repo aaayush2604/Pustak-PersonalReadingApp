@@ -1,3 +1,4 @@
+// hook/useReadingStore.js
 import { useEffect, useState, useCallback } from "react";
 import {
   defaultReadingState,
@@ -9,11 +10,6 @@ export const useReadingStore = () => {
   const [state, setState] = useState(defaultReadingState);
   const [loading, setLoading] = useState(true);
 
-  // load once initially
-  useEffect(() => {
-    reload();
-  }, []);
-
   const reload = useCallback(async () => {
     try {
       setLoading(true);
@@ -24,21 +20,49 @@ export const useReadingStore = () => {
     }
   }, []);
 
-  const updateState = useCallback(
-    (updater) => {
-      setState((prev) => {
-        const next = typeof updater === "function" ? updater(prev) : updater;
-        saveReadingState(next); // persist
-        return next;
+  useEffect(() => {
+    reload();
+  }, [reload]);
+
+  const updateState = useCallback((updater) => {
+    setState((prev) => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      saveReadingState(next);
+      return next;
+    });
+  }, []);
+
+  // ---------- TBR ----------
+  const addToTBR = useCallback(
+    (book) => {
+      updateState((prev) => {
+        // avoid duplicates by workKey
+        if (prev.tbrBooks.some((b) => b.workKey === book.workKey)) {
+          return prev;
+        }
+        return {
+          ...prev,
+          tbrBooks: [book, ...prev.tbrBooks],
+        };
       });
     },
-    []
+    [updateState]
   );
 
+  const removeFromTBR = useCallback(
+    (workKey) => {
+      updateState((prev) => ({
+        ...prev,
+        tbrBooks: prev.tbrBooks.filter((b) => b.workKey !== workKey),
+      }));
+    },
+    [updateState]
+  );
+
+  // ---------- Currently reading ----------
   const setCurrentlyReading = useCallback(
     (book) => {
       const now = new Date().toISOString();
-
       updateState((prev) => ({
         ...prev,
         currentlyReading: {
@@ -63,7 +87,6 @@ export const useReadingStore = () => {
   const updateProgress = useCallback(
     ({ currentPage }) => {
       const now = new Date().toISOString();
-
       updateState((prev) => {
         if (!prev.currentlyReading) return prev;
         return {
@@ -82,7 +105,6 @@ export const useReadingStore = () => {
   const finishCurrentBook = useCallback(
     ({ rating, notes } = {}) => {
       const now = new Date().toISOString();
-
       updateState((prev) => {
         if (!prev.currentlyReading) return prev;
 
@@ -111,16 +133,10 @@ export const useReadingStore = () => {
   const addReadingSession = useCallback(
     ({ workKey, minutes, pagesRead }) => {
       const today = new Date().toISOString().slice(0, 10);
-
       updateState((prev) => ({
         ...prev,
         readingSessions: [
-          {
-            workKey,
-            date: today,
-            minutes,
-            pagesRead: pagesRead ?? null,
-          },
+          { workKey, date: today, minutes, pagesRead: pagesRead ?? null },
           ...prev.readingSessions,
         ],
       }));
@@ -129,9 +145,11 @@ export const useReadingStore = () => {
   );
 
   return {
-    ...state,
+    ...state,                     // exposes tbrBooks, currentlyReading, finishedBooks, readingSessions
     loading,
-    reload,             
+    reload,
+    addToTBR,
+    removeFromTBR,
     setCurrentlyReading,
     updateProgress,
     finishCurrentBook,

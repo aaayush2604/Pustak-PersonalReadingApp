@@ -2,6 +2,7 @@ import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useCallback, useEffect } from "react";
+import { ToastProvider } from "expo-toast";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -31,7 +32,11 @@ const Layout = () => {
     return null;
   }
 
-  return <Stack onLayout={onLayoutRootView} />;
+  return(
+    <ToastProvider>
+      <Stack onLayout={onLayoutRootView} />;
+    </ToastProvider>
+  ) 
 };
 
 export default Layout;

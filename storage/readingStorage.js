@@ -4,6 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 const STORAGE_KEY = "@reading_state_v1";
 
 export const defaultReadingState = {
+  tbrBooks: [],
   currentlyReading: null,
   finishedBooks: [],
   readingSessions: [],
@@ -13,7 +14,14 @@ export const loadReadingState = async () => {
   try {
     const json = await AsyncStorage.getItem(STORAGE_KEY);
     if (!json) return defaultReadingState;
-    return JSON.parse(json);
+
+    const parsed = JSON.parse(json);
+
+    // ✅ merge defaults with saved data
+    return {
+      ...defaultReadingState,
+      ...parsed,
+    };
   } catch (e) {
     console.error("Failed to load reading state", e);
     return defaultReadingState;
