@@ -34,7 +34,7 @@ const Layout = () => {
 
   return(
     <ToastProvider>
-      <Stack onLayout={onLayoutRootView} />;
+      <Stack onLayout={onLayoutRootView}/>
     </ToastProvider>
   ) 
 };

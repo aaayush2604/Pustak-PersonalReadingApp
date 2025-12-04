@@ -18,7 +18,7 @@ const styles = StyleSheet.create({
   },
   logoImage: {
     width: "80%",
-    height: "80%",
+    height: "120%",
   },
   bookTitleBox: {
     marginTop: SIZES.small,

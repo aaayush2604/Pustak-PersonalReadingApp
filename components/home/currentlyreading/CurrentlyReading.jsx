@@ -1,5 +1,5 @@
 // components/currently-reading/CurrentlyReading.jsx
-import React, { useState } from "react";
+import React, { useState,useCallback } from "react";
 import { View, Text, Image, TextInput, Button } from "react-native";
 import { useReadingStore } from "../../../hook/useReadingStore";
 import { useFocusEffect } from "expo-router";

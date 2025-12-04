@@ -31,7 +31,18 @@ const BookRow = ({ book, onPressAction, actionLabel }) => {
       <View style={{ flex: 1 }}>
         <Text style={{ fontWeight: "600" }}>{book.title}</Text>
         <Text style={{ color: "#666", fontSize: 12 }}>
-          {book.authors?.join(", ") || "Unknown author"}
+          {Array.isArray(book.authors)
+    ? book.authors
+        .map((a) =>
+          typeof a === "string"
+            ? a
+            : typeof a === "object" && a !== null && "name" in a
+            ? a.name
+            : null
+        )
+        .filter(Boolean)
+        .join(", ") || "Unknown author"
+    : "Unknown author"}
         </Text>
       </View>
       {onPressAction && (

@@ -101,21 +101,38 @@ const BookDetails = () => {
     if (!data) return null;
 
     switch (activeTab) {
-      case "Excerpts":
-        return (
-          <Specifics
-            title="Excerpts"
-            points={
-              Array.isArray(data.excerpts) && data.excerpts.length > 0
-                ? data.excerpts.map((item) => item.excerpt)
-                : ["N/A"]
-            }
-          />
-        );
-      case "Description":
-        return (
-          <BookDescription info={data.description ?? "No data provided"} />
-        );
+      case "Excerpts": {
+        const points =
+          Array.isArray(data.excerpts) && data.excerpts.length > 0
+            ? data.excerpts.map((item) => {
+                const ex = item.excerpt;
+                if (typeof ex === "string") return ex;
+                if (ex && typeof ex === "object" && "value" in ex) {
+                  return ex.value;
+                }
+                return "N/A";
+              })
+            : ["N/A"];
+
+        return <Specifics title="Excerpts" points={points} />;
+      }
+
+      case "Description": {
+        let descriptionText = "No data provided";
+
+        if (typeof data.description === "string") {
+          descriptionText = data.description;
+        } else if (
+          data.description &&
+          typeof data.description === "object" &&
+          "value" in data.description
+        ) {
+          descriptionText = data.description.value;
+        }
+
+        return <BookDescription info={descriptionText} />;
+      }
+
       case "Characters":
         return (
           <Specifics
@@ -131,6 +148,7 @@ const BookDetails = () => {
         return null;
     }
   };
+
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);

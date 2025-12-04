@@ -5,11 +5,9 @@ import { useRouter } from 'expo-router'
 import styles from './welcome.style'
 import {icons,SIZES} from '../../../constants'
 
-const bookTypes=["TBR","Reading","Finished"]
 
 const Welcome = ({searchTerm, setSearchTerm,handleClick}) => {
   const router=useRouter();
-  const [activeJobType,setActiveJobType]=useState("Full-time");
 
   return (
     <View>
@@ -32,7 +30,7 @@ const Welcome = ({searchTerm, setSearchTerm,handleClick}) => {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.tabsContainer}>
+      {/* <View style={styles.tabsContainer}>
         <FlatList data={bookTypes} renderItem={({item})=>(
           <TouchableOpacity style={styles.tab(activeJobType,item)} onPress={()=>{
             setActiveJobType(item);
@@ -41,7 +39,7 @@ const Welcome = ({searchTerm, setSearchTerm,handleClick}) => {
             <Text style={styles.tabText(activeJobType,item)}>{item}</Text>
           </TouchableOpacity>
         )} keyExtractor={item=>item} contentContainerStyle={{columnGap: SIZES.small}} horizontal></FlatList>
-      </View>
+      </View> */}
     </View>
   )
 }
