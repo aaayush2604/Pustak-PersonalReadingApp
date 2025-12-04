@@ -13,65 +13,51 @@ import { COLORS, SIZES, icons } from "../../constants";
 import { ScreenHeaderBtn } from "../../components";
 import { useReadingStore } from "../../hook/useReadingStore";
 
-const BookRow = ({ book, onPressAction, actionLabel }) => {
+const COVER_FALLBACK =
+  "https://t4.ftcdn.net/jpg/05/05/61/73/360_F_505617309_NN1CW7diNmGXJfMicpY9eXHKV4sqzO5H.jpg";
+
+const CoverStrip = ({ books }) => {
+  if (!Array.isArray(books) || books.length === 0) {
+    return (
+      <Text style={{ color: "#777", marginTop: 4 }}>
+        No books here yet.
+      </Text>
+    );
+  }
+
+  const topBooks = books.slice(0, 4);
+
   return (
-    <View
-      style={{
-        flexDirection: "row",
-        marginBottom: 12,
-        alignItems: "center",
-      }}
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={{ paddingVertical: 4 }}
     >
-      {book.coverUrl && (
-        <Image
-          source={{ uri: book.coverUrl }}
-          style={{ width: 50, height: 75, borderRadius: 4, marginRight: 10 }}
-        />
-      )}
-      <View style={{ flex: 1 }}>
-        <Text style={{ fontWeight: "600" }}>{book.title}</Text>
-        <Text style={{ color: "#666", fontSize: 12 }}>
-          {Array.isArray(book.authors)
-    ? book.authors
-        .map((a) =>
-          typeof a === "string"
-            ? a
-            : typeof a === "object" && a !== null && "name" in a
-            ? a.name
-            : null
-        )
-        .filter(Boolean)
-        .join(", ") || "Unknown author"
-    : "Unknown author"}
-        </Text>
-      </View>
-      {onPressAction && (
-        <TouchableOpacity
-          onPress={onPressAction}
-          style={{
-            paddingHorizontal: 10,
-            paddingVertical: 6,
-            borderRadius: 4,
-            borderWidth: 1,
-            borderColor: COLORS.primary,
-          }}
-        >
-          <Text style={{ fontSize: 12, color: COLORS.primary }}>
-            {actionLabel}
-          </Text>
-        </TouchableOpacity>
-      )}
-    </View>
+      {topBooks.map((book) => {
+        const uri = book.coverUrl || COVER_FALLBACK;
+        return (
+          <View
+            key={book.workKey + (book.finishedAt || "")}
+            style={{ marginRight: 8 }}
+          >
+            <Image
+              source={{ uri }}
+              style={{ width: 60, height: 90, borderRadius: 4 }}
+            />
+          </View>
+        );
+      })}
+    </ScrollView>
   );
 };
 
 const ReadingShelf = () => {
   const router = useRouter();
-  
+
   const {
-    tbrBooks = [],           // 👈 default to []
+    tbrBooks = [],
     currentlyReading,
-    finishedBooks = [],      // 👈 default to []
+    finishedBooks = [],
     loading,
     reload,
     setCurrentlyReading,
@@ -97,10 +83,17 @@ const ReadingShelf = () => {
     removeFromTBR(book.workKey);
   };
 
+  // We'll still keep the "Start" behavior for TBR,
+  // but now user will mostly go to /reading-category/tbr for the full list.
+  // On this overview screen we just show cover strip.
+
+  // Build arrays for each section
+  const tbrList = Array.isArray(tbrBooks) ? tbrBooks : [];
+  const readingList = currentlyReading ? [currentlyReading] : [];
+  const finishedList = Array.isArray(finishedBooks) ? finishedBooks : [];
+
   return (
-    <SafeAreaView
-      style={{ flex: 1, backgroundColor: COLORS.lightWhite }}
-    >
+    <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.lightWhite }}>
       <Stack.Screen
         options={{
           headerStyle: { backgroundColor: COLORS.lightWhite },
@@ -125,82 +118,65 @@ const ReadingShelf = () => {
           <Text>Loading shelf...</Text>
         ) : (
           <>
-            {/* TBR */}
-            <Text
+            {/* TBR Section */}
+            <TouchableOpacity
+              onPress={() => router.push("/reading-category/tbr")}
+              activeOpacity={0.8}
               style={{
-                fontSize: 18,
-                fontWeight: "700",
-                marginBottom: 8,
+                marginBottom: 24,
               }}
             >
-              To Be Read
-            </Text>
-            {Array.isArray(tbrBooks) && tbrBooks.length === 0 ? (
-              <Text style={{ marginBottom: 16, color: "#777" }}>
-                No books in your TBR yet.
+              <Text
+                style={{
+                  fontSize: 18,
+                  fontWeight: "700",
+                  marginBottom: 8,
+                }}
+              >
+                To Be Read
               </Text>
-            ) : (
-              <View style={{ marginBottom: 16 }}>
-                {tbrBooks.map((book) => (
-                  <BookRow
-                    key={book.workKey}
-                    book={book}
-                    actionLabel="Start"
-                    onPressAction={() => startBookFromTBR(book)}
-                  />
-                ))}
-              </View>
-            )}
+              <CoverStrip books={tbrList} />
+            </TouchableOpacity>
 
-            {/* Currently Reading */}
-            <Text
+            {/* Currently Reading Section */}
+            <TouchableOpacity
+              onPress={() => router.push("/reading-category/reading")}
+              activeOpacity={0.8}
               style={{
-                fontSize: 18,
-                fontWeight: "700",
-                marginBottom: 8,
-                marginTop: 4,
+                marginBottom: 24,
               }}
             >
-              Currently Reading
-            </Text>
-            {!currentlyReading ? (
-              <Text style={{ marginBottom: 16, color: "#777" }}>
-                You’re not reading anything right now.
+              <Text
+                style={{
+                  fontSize: 18,
+                  fontWeight: "700",
+                  marginBottom: 8,
+                }}
+              >
+                Currently Reading
               </Text>
-            ) : (
-              <View style={{ marginBottom: 16 }}>
-                <BookRow book={currentlyReading} />
-                <Text style={{ color: "#555", fontSize: 12 }}>
-                  {currentlyReading.currentPage != null &&
-                  currentlyReading.totalPages
-                    ? `${currentlyReading.currentPage}/${currentlyReading.totalPages} pages`
-                    : `${currentlyReading.currentPage ?? 0} pages read`}
-                </Text>
-              </View>
-            )}
+              <CoverStrip books={readingList} />
+            </TouchableOpacity>
 
-            {/* Finished */}
-            <Text
+            {/* Finished Section */}
+            <TouchableOpacity
+              onPress={() => router.push("/reading-category/finished")}
+              activeOpacity={0.8}
               style={{
-                fontSize: 18,
-                fontWeight: "700",
-                marginBottom: 8,
-                marginTop: 4,
+                marginBottom: 24,
               }}
             >
-              Finished
-            </Text>
-            {Array.isArray(finishedBooks) && finishedBooks.length === 0 ? (
-              <Text style={{ marginBottom: 16, color: "#777" }}>
-                You haven’t finished any books yet.
+              <Text
+                style={{
+                  fontSize: 18,
+                  fontWeight: "700",
+                  marginBottom: 8,
+                }}
+              >
+                Finished
               </Text>
-            ) : (
-              <View style={{ marginBottom: 16 }}>
-                {finishedBooks.map((book) => (
-                  <BookRow key={book.workKey + book.finishedAt} book={book} />
-                ))}
-              </View>
-            )}
+              <CoverStrip books={finishedList} />
+            </TouchableOpacity>
           </>
         )}
       </ScrollView>

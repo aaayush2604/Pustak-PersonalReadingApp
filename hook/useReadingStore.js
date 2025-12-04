@@ -6,6 +6,39 @@ import {
   saveReadingState,
 } from "../storage/readingStorage";
 
+const normalizeAuthors = (authors) => {
+  if (!authors) return [];
+
+  // Already good: array of strings
+  if (Array.isArray(authors)) {
+    return authors
+      .map((a) =>
+        typeof a === "string"
+          ? a.trim()
+          : a && typeof a === "object" && "name" in a
+          ? String(a.name).trim()
+          : null
+      )
+      .filter(Boolean);
+  }
+
+  // If it's a single string: "Author1, Author2"
+  if (typeof authors === "string") {
+    return authors
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+
+  // If it's a single object { name: "..." }
+  if (typeof authors === "object" && authors !== null && "name" in authors) {
+    return [String(authors.name).trim()];
+  }
+
+  return [];
+};
+
+
 export const useReadingStore = () => {
   const [state, setState] = useState(defaultReadingState);
   const [loading, setLoading] = useState(true);
@@ -14,7 +47,30 @@ export const useReadingStore = () => {
     try {
       setLoading(true);
       const loaded = await loadReadingState();
-      setState(loaded);
+      const normalized = {
+      ...loaded,
+      tbrBooks: Array.isArray(loaded.tbrBooks)
+        ? loaded.tbrBooks.map((b) => ({
+            ...b,
+            authors: normalizeAuthors(b.authors),
+          }))
+        : [],
+      finishedBooks: Array.isArray(loaded.finishedBooks)
+        ? loaded.finishedBooks.map((b) => ({
+            ...b,
+            authors: normalizeAuthors(b.authors),
+          }))
+        : [],
+      currentlyReading: loaded.currentlyReading
+        ? {
+            ...loaded.currentlyReading,
+            authors: normalizeAuthors(loaded.currentlyReading.authors),
+          }
+        : null,
+    };
+
+
+      setState(normalized);
     } finally {
       setLoading(false);
     }
