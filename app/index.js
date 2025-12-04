@@ -177,50 +177,64 @@ const Home = () => {
               )}
               <ScrollView>
                 {results.map((item) => {
-                  const coverUrl = item.coverId
-                    ? `https://covers.openlibrary.org/b/id/${item.coverId}-M.jpg`
-                    : "https://t4.ftcdn.net/jpg/05/05/61/73/360_F_505617309_NN1CW7diNmGXJfMicpY9eXHKV4sqzO5H.jpg";
+  const coverUrl = item.coverId
+    ? `https://covers.openlibrary.org/b/id/${item.coverId}-M.jpg`
+    : "https://t4.ftcdn.net/jpg/05/05/61/73/360_F_505617309_NN1CW7diNmGXJfMicpY9eXHKV4sqzO5H.jpg";
 
-                  return (
-                    <TouchableOpacity
-                      key={item.workKey + (item.editionKey || "")}
-                      onPress={() => handleBookPress(item)}
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        marginBottom: 8,
-                        paddingVertical: 6,
-                      }}
-                    >
-                      <Image
-                        source={{ uri: coverUrl }}
-                        style={{
-                          width: 40,
-                          height: 60,
-                          borderRadius: 4,
-                          marginRight: 10,
-                        }}
-                      />
-                      <View style={{ flex: 1 }}>
-                        <Text
-                          style={{ fontWeight: "600", marginBottom: 2 }}
-                          numberOfLines={1}
-                        >
-                          {item.title}
-                        </Text>
-                        <Text
-                          style={{ color: "#555", fontSize: 12 }}
-                          numberOfLines={1}
-                        >
-                          {(item.author || []).join(", ")}
-                        </Text>
-                        <Text style={{ color: "#999", fontSize: 11 }}>
-                          First published: {item.firstPublishYear}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
+  // 🔹 Normalize author into a string safely
+  let authorText = "Unknown author";
+
+  if (Array.isArray(item.author)) {
+    authorText = item.author.join(", ");
+  } else if (typeof item.author === "string") {
+    authorText = item.author;
+  } else if (Array.isArray(item.authors)) {
+    // in case your hook uses `authors` instead of `author`
+    authorText = item.authors.join(", ");
+  } else if (typeof item.authors === "string") {
+    authorText = item.authors;
+  }
+
+  return (
+    <TouchableOpacity
+      key={item.workKey + (item.editionKey || "")}
+      onPress={() => handleBookPress(item)}
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        marginBottom: 8,
+        paddingVertical: 6,
+      }}
+    >
+      <Image
+        source={{ uri: coverUrl }}
+        style={{
+          width: 40,
+          height: 60,
+          borderRadius: 4,
+          marginRight: 10,
+        }}
+      />
+      <View style={{ flex: 1 }}>
+        <Text
+          style={{ fontWeight: "600", marginBottom: 2 }}
+          numberOfLines={1}
+        >
+          {item.title}
+        </Text>
+        <Text
+          style={{ color: "#555", fontSize: 12 }}
+          numberOfLines={1}
+        >
+          {authorText}
+        </Text>
+        <Text style={{ color: "#999", fontSize: 11 }}>
+          First published: {item.firstPublishYear}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+})}
               </ScrollView>
             </View>
           )}

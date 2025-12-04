@@ -141,15 +141,17 @@ export const useReadingStore = () => {
   );
 
   const updateProgress = useCallback(
-    ({ currentPage }) => {
+    ({ currentPage, totalPages }) => {
       const now = new Date().toISOString();
       updateState((prev) => {
         if (!prev.currentlyReading) return prev;
+
         return {
           ...prev,
           currentlyReading: {
             ...prev.currentlyReading,
-            currentPage,
+            currentPage: currentPage ?? prev.currentlyReading.currentPage,
+            totalPages: totalPages ?? prev.currentlyReading.totalPages,
             lastUpdatedAt: now,
           },
         };

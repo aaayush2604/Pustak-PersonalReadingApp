@@ -1,8 +1,10 @@
 // components/currently-reading/CurrentlyReading.jsx
-import React, { useState,useCallback } from "react";
-import { View, Text, Image, TextInput, Button } from "react-native";
+import React, { useState, useCallback } from "react";
+import { View, Text, Image, TextInput, Button, TouchableOpacity } from "react-native";
 import { useReadingStore } from "../../../hook/useReadingStore";
 import { useFocusEffect } from "expo-router";
+
+import styles from "./currentlyreading.style"
 
 const CurrentlyReading = () => {
   const {
@@ -13,7 +15,9 @@ const CurrentlyReading = () => {
     finishCurrentBook,
   } = useReadingStore();
 
-  const [pageInput, setPageInput] = useState("");
+  const [isEditingProgress, setIsEditingProgress] = useState(false);
+  const [localCurrent, setLocalCurrent] = useState("");
+  const [localTotal, setLocalTotal] = useState("");
 
   useFocusEffect(
     useCallback(() => {
@@ -23,78 +27,113 @@ const CurrentlyReading = () => {
 
   if (loading) {
     return (
-      <View>
+      <View style={styles.container}>
         <Text>Loading reading data...</Text>
       </View>
     );
   }
 
   if (!currentlyReading) {
-    return (
-      <View>
-        <Text>No book currently reading.</Text>
-      </View>
-    );
+    return null;
   }
 
-  const progressText =
-    currentlyReading.totalPages && currentlyReading.currentPage != null
-      ? `${currentlyReading.currentPage}/${currentlyReading.totalPages} pages`
-      : `${currentlyReading.currentPage ?? 0} pages read`;
+  const current = currentlyReading.currentPage || 0;
+  const total = currentlyReading.totalPages || 0;
+
+  const percent = total > 0 ? Math.floor((current / total) * 100) : 0;
+
+  const handleEnterEdit = () => {
+    setLocalCurrent(String(current));
+    setLocalTotal(String(total));
+    setIsEditingProgress(true);
+  };
+
+  const handleSave = () => {
+    const newCurrent = parseInt(localCurrent, 10) || 0;
+    const newTotal = parseInt(localTotal, 10) || 0;
+
+    updateProgress({
+      currentPage: newCurrent,
+      totalPages: newTotal,
+    });
+
+    setIsEditingProgress(false);
+  };
 
   return (
-    <View style={{ padding: 16 }}>
-      <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 8 }}>
+    <View style={styles.container}>
+      <Text style={styles.headerText}>
         Currently Reading
       </Text>
 
       {currentlyReading.coverUrl && (
-        <Image
-          source={{ uri: currentlyReading.coverUrl }}
-          style={{ width: 120, height: 180, marginBottom: 8 }}
-        />
+        <View style={styles.logoContainer}>
+          <Image
+            source={{ uri: currentlyReading.coverUrl }}
+            style={styles.logoImage}
+          />
+        </View>
       )}
 
-      <Text style={{ fontSize: 16, fontWeight: "600" }}>
+      <Text style={styles.bookTitle}>
         {currentlyReading.title}
       </Text>
-      <Text style={{ color: "#555" }}>
+      <Text style={styles.authorName}>
         {currentlyReading.authors?.join(", ") || "Unknown author"}
       </Text>
-      <Text style={{ marginTop: 4 }}>{progressText}</Text>
 
-      <View style={{ flexDirection: "row", marginTop: 8, alignItems: "center" }}>
-        <Text>Update page: </Text>
-        <TextInput
-          value={pageInput}
-          onChangeText={setPageInput}
-          keyboardType="numeric"
-          style={{
-            borderWidth: 1,
-            borderColor: "#ccc",
-            paddingHorizontal: 8,
-            paddingVertical: 4,
-            width: 80,
-            marginRight: 8,
-          }}
-        />
-        <Button
-          title="Save"
-          onPress={() => {
-            const pageNum = parseInt(pageInput, 10);
-            if (!isNaN(pageNum)) {
-              updateProgress({ currentPage: pageNum });
-            }
-          }}
-        />
+  
+      <View style={styles.progressSection}>
+        {!isEditingProgress ? (
+          <TouchableOpacity onPress={handleEnterEdit} style={{ flexDirection: "row", alignItems: "center" }}>
+            <Text style={styles.progressText}>Update Reading Progress: </Text>
+            <Text style={styles.progressText}>
+              {percent}% 
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <TextInput
+              value={localCurrent}
+              onChangeText={setLocalCurrent}
+              keyboardType="numeric"
+              style={{
+                borderWidth: 1,
+                width: 50,
+                padding: 4,
+                marginRight: 4,
+                textAlign: "center",
+                color:"white"
+              }}
+              onBlur={handleSave}
+            />
+
+            <Text style={{ fontSize: 18, marginRight: 4,color:"white" }}>/</Text>
+
+            <TextInput
+              value={localTotal}
+              onChangeText={setLocalTotal}
+              keyboardType="numeric"
+              style={{
+                borderWidth: 1,
+                width: 50,
+                padding: 4,
+                marginRight: 8,
+                textAlign: "center",
+                color:"white"
+              }}
+              onBlur={handleSave}
+            />
+          </View>
+        )}
       </View>
 
-      <View style={{ marginTop: 12 }}>
-        <Button
-          title="Mark as Finished"
-          onPress={() => finishCurrentBook()}
-        />
-      </View>
+      <TouchableOpacity 
+        style={styles.finishedButton}
+        onPress={() => finishCurrentBook()}
+      >
+        <Text style={styles.finishedButtonText}>Mark as Finished</Text>
+      </TouchableOpacity>
     </View>
   );
 };

@@ -52,10 +52,15 @@ const BookDetails = () => {
     const workKey =
       workKeyFull.split("/").filter(Boolean).pop() || params.id;
 
+    
     let coverUrl = null;
+
     if (Array.isArray(data.covers) && data.covers.length > 0) {
-      const lastCoverId = data.covers[data.covers.length - 1];
-      coverUrl = `https://covers.openlibrary.org/b/id/${lastCoverId}-L.jpg`;
+      // Pick a cover from the middle of the list as a compromise
+      const midIndex = Math.floor(data.covers.length / 2);
+      const coverId = data.covers[midIndex];
+
+      coverUrl = `https://covers.openlibrary.org/b/id/${coverId}-L.jpg`;
     }
 
     // turn "Author1, Author2" into ["Author1", "Author2"]
