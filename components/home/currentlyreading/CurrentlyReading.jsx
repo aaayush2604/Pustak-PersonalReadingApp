@@ -1,10 +1,9 @@
 // components/currently-reading/CurrentlyReading.jsx
 import React, { useState, useCallback } from "react";
-import { View, Text, Image, TextInput, Button, TouchableOpacity } from "react-native";
+import { View, Text, Image, TextInput, TouchableOpacity } from "react-native";
 import { useReadingStore } from "../../../hook/useReadingStore";
 import { useFocusEffect } from "expo-router";
-
-import styles from "./currentlyreading.style"
+import styles from "./currentlyreading.style";
 
 const CurrentlyReading = () => {
   const {
@@ -33,13 +32,10 @@ const CurrentlyReading = () => {
     );
   }
 
-  if (!currentlyReading) {
-    return null;
-  }
+  if (!currentlyReading) return null;
 
   const current = currentlyReading.currentPage || 0;
   const total = currentlyReading.totalPages || 0;
-
   const percent = total > 0 ? Math.floor((current / total) * 100) : 0;
 
   const handleEnterEdit = () => {
@@ -49,12 +45,9 @@ const CurrentlyReading = () => {
   };
 
   const handleSave = () => {
-    const newCurrent = parseInt(localCurrent, 10) || 0;
-    const newTotal = parseInt(localTotal, 10) || 0;
-
     updateProgress({
-      currentPage: newCurrent,
-      totalPages: newTotal,
+      currentPage: localCurrent === "" ? current : parseInt(localCurrent, 10),
+      totalPages: localTotal === "" ? total : parseInt(localTotal, 10),
     });
 
     setIsEditingProgress(false);
@@ -62,34 +55,25 @@ const CurrentlyReading = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.headerText}>
-        Currently Reading
-      </Text>
+      <Text style={styles.headerText}>Currently Reading</Text>
 
       {currentlyReading.coverUrl && (
         <View style={styles.logoContainer}>
-          <Image
-            source={{ uri: currentlyReading.coverUrl }}
-            style={styles.logoImage}
-          />
+          <Image source={{ uri: currentlyReading.coverUrl }} style={styles.logoImage} />
         </View>
       )}
 
-      <Text style={styles.bookTitle}>
-        {currentlyReading.title}
-      </Text>
+      <Text style={styles.bookTitle}>{currentlyReading.title}</Text>
       <Text style={styles.authorName}>
         {currentlyReading.authors?.join(", ") || "Unknown author"}
       </Text>
 
-  
+      {/* Progress Section */}
       <View style={styles.progressSection}>
         {!isEditingProgress ? (
           <TouchableOpacity onPress={handleEnterEdit} style={{ flexDirection: "row", alignItems: "center" }}>
             <Text style={styles.progressText}>Update Reading Progress: </Text>
-            <Text style={styles.progressText}>
-              {percent}% 
-            </Text>
+            <Text style={styles.progressText}>{percent}%</Text>
           </TouchableOpacity>
         ) : (
           <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -103,12 +87,11 @@ const CurrentlyReading = () => {
                 padding: 4,
                 marginRight: 4,
                 textAlign: "center",
-                color:"white"
+                color: "white",
               }}
-              onBlur={handleSave}
             />
 
-            <Text style={{ fontSize: 18, marginRight: 4,color:"white" }}>/</Text>
+            <Text style={{ fontSize: 18, marginRight: 4, color: "white" }}>/</Text>
 
             <TextInput
               value={localTotal}
@@ -120,18 +103,18 @@ const CurrentlyReading = () => {
                 padding: 4,
                 marginRight: 8,
                 textAlign: "center",
-                color:"white"
+                color: "white",
               }}
-              onBlur={handleSave}
             />
+
+            <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
+              <Text style={styles.saveButtonText}>Save</Text>
+            </TouchableOpacity>
           </View>
         )}
       </View>
 
-      <TouchableOpacity 
-        style={styles.finishedButton}
-        onPress={() => finishCurrentBook()}
-      >
+      <TouchableOpacity style={styles.finishedButton} onPress={() => finishCurrentBook()}>
         <Text style={styles.finishedButtonText}>Mark as Finished</Text>
       </TouchableOpacity>
     </View>

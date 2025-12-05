@@ -9,7 +9,6 @@ import {
 const normalizeAuthors = (authors) => {
   if (!authors) return [];
 
-  // Already good: array of strings
   if (Array.isArray(authors)) {
     return authors
       .map((a) =>
@@ -22,7 +21,6 @@ const normalizeAuthors = (authors) => {
       .filter(Boolean);
   }
 
-  // If it's a single string: "Author1, Author2"
   if (typeof authors === "string") {
     return authors
       .split(",")
@@ -30,14 +28,12 @@ const normalizeAuthors = (authors) => {
       .filter(Boolean);
   }
 
-  // If it's a single object { name: "..." }
   if (typeof authors === "object" && authors !== null && "name" in authors) {
     return [String(authors.name).trim()];
   }
 
   return [];
 };
-
 
 export const useReadingStore = () => {
   const [state, setState] = useState(defaultReadingState);
@@ -48,27 +44,26 @@ export const useReadingStore = () => {
       setLoading(true);
       const loaded = await loadReadingState();
       const normalized = {
-      ...loaded,
-      tbrBooks: Array.isArray(loaded.tbrBooks)
-        ? loaded.tbrBooks.map((b) => ({
-            ...b,
-            authors: normalizeAuthors(b.authors),
-          }))
-        : [],
-      finishedBooks: Array.isArray(loaded.finishedBooks)
-        ? loaded.finishedBooks.map((b) => ({
-            ...b,
-            authors: normalizeAuthors(b.authors),
-          }))
-        : [],
-      currentlyReading: loaded.currentlyReading
-        ? {
-            ...loaded.currentlyReading,
-            authors: normalizeAuthors(loaded.currentlyReading.authors),
-          }
-        : null,
-    };
-
+        ...loaded,
+        tbrBooks: Array.isArray(loaded.tbrBooks)
+          ? loaded.tbrBooks.map((b) => ({
+              ...b,
+              authors: normalizeAuthors(b.authors),
+            }))
+          : [],
+        finishedBooks: Array.isArray(loaded.finishedBooks)
+          ? loaded.finishedBooks.map((b) => ({
+              ...b,
+              authors: normalizeAuthors(b.authors),
+            }))
+          : [],
+        currentlyReading: loaded.currentlyReading
+          ? {
+              ...loaded.currentlyReading,
+              authors: normalizeAuthors(loaded.currentlyReading.authors),
+            }
+          : null,
+      };
 
       setState(normalized);
     } finally {
@@ -82,7 +77,8 @@ export const useReadingStore = () => {
 
   const updateState = useCallback((updater) => {
     setState((prev) => {
-      const next = typeof updater === "function" ? updater(prev) : updater;
+      const next =
+        typeof updater === "function" ? updater(prev) : updater;
       saveReadingState(next);
       return next;
     });
@@ -92,7 +88,6 @@ export const useReadingStore = () => {
   const addToTBR = useCallback(
     (book) => {
       updateState((prev) => {
-        // avoid duplicates by workKey
         if (prev.tbrBooks.some((b) => b.workKey === book.workKey)) {
           return prev;
         }
@@ -140,20 +135,63 @@ export const useReadingStore = () => {
     [updateState]
   );
 
+  // ----------- UPDATE PROGRESS (final correct version) ------------
   const updateProgress = useCallback(
     ({ currentPage, totalPages }) => {
       const now = new Date().toISOString();
+      const today = now.slice(0, 10);
+
       updateState((prev) => {
         if (!prev.currentlyReading) return prev;
+
+        const prevPage = prev.currentlyReading.currentPage;
+
+        const newPage =
+          currentPage === undefined ||
+          currentPage === null ||
+          currentPage === ""
+            ? prevPage
+            : Number(currentPage);
+
+        const pagesRead = Math.max(newPage - prevPage, 0);
+
+        console.log("SESSION CHECK:", {
+          prevPage,
+          newPage,
+          pagesRead,
+        });
+
+        let updatedSessions = [...prev.readingSessions];
+
+        if (pagesRead > 0) {
+          const existingIndex = updatedSessions.findIndex(
+            (s) => s.workKey === prev.currentlyReading.workKey && s.date === today
+          );
+
+          if (existingIndex !== -1) {
+            updatedSessions[existingIndex] = {
+              ...updatedSessions[existingIndex],
+              pagesRead:
+                updatedSessions[existingIndex].pagesRead + pagesRead,
+            };
+          } else {
+            updatedSessions.unshift({
+              workKey: prev.currentlyReading.workKey,
+              date: today,
+              pagesRead,
+            });
+          }
+        }
 
         return {
           ...prev,
           currentlyReading: {
             ...prev.currentlyReading,
-            currentPage: currentPage ?? prev.currentlyReading.currentPage,
+            currentPage: newPage,
             totalPages: totalPages ?? prev.currentlyReading.totalPages,
             lastUpdatedAt: now,
           },
+          readingSessions: updatedSessions,
         };
       });
     },
@@ -189,13 +227,13 @@ export const useReadingStore = () => {
   );
 
   const addReadingSession = useCallback(
-    ({ workKey, minutes, pagesRead }) => {
-      const today = new Date().toISOString().slice(0, 10);
+    ({ workKey, pagesRead, date }) => {
+      const today = date ?? new Date().toISOString().slice(0, 10);
       updateState((prev) => ({
         ...prev,
         readingSessions: [
-          { workKey, date: today, minutes, pagesRead: pagesRead ?? null },
-          ...prev.readingSessions,
+          { workKey, date: today, pagesRead },
+          ...(prev.readingSessions || []),
         ],
       }));
     },
@@ -203,7 +241,7 @@ export const useReadingStore = () => {
   );
 
   return {
-    ...state,                     // exposes tbrBooks, currentlyReading, finishedBooks, readingSessions
+    ...state,
     loading,
     reload,
     addToTBR,

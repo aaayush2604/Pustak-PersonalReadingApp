@@ -67,6 +67,17 @@ const styles = StyleSheet.create({
         fontFamily: FONT.bold,
         fontSize: 16,
     },
+    saveButton: {
+      backgroundColor: "#4CAF50",
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 6,
+      marginLeft: 8,
+    },
+    saveButtonText: {
+      color: "white",
+      fontWeight: "bold",
+    },
 });
 
 export default styles;

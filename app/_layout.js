@@ -3,6 +3,8 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useCallback, useEffect } from "react";
 import { ToastProvider } from "expo-toast";
+import "react-native-reanimated";
+
 
 SplashScreen.preventAutoHideAsync();
 

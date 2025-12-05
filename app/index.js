@@ -24,6 +24,11 @@ const Home = () => {
     router.push("/reading-shelf");
   };
 
+  const goToStatistics = () => {
+    setMenuOpen(false);
+    router.push("/statistics");
+  };
+
   // 🔍 search state
   const [searchTerm, setSearchTerm] = useState("");
   const { results, loadingSearch, searchError, searchBooks, clearResults } =
@@ -84,10 +89,11 @@ const Home = () => {
         <View
           style={{
             position: "absolute",
-            top: 60,
+            top: 0,
             left: 16,
             right: 16,
             zIndex: 20,
+            
           }}
         >
           <TouchableOpacity
@@ -97,12 +103,13 @@ const Home = () => {
               left: -16,
               right: -16,
               bottom: -1000,
+              
             }}
             onPress={() => setMenuOpen(false)}
           />
           <View
             style={{
-              backgroundColor: "white",
+               backgroundColor:COLORS.tertiary,
               borderRadius: 8,
               paddingVertical: 8,
               paddingHorizontal: 12,
@@ -115,9 +122,15 @@ const Home = () => {
           >
             <TouchableOpacity
               onPress={goToShelf}
-              style={{ paddingVertical: 8 }}
+              style={{ paddingVertical: 8,}}
             >
-              <Text style={{ fontSize: 16 }}>My Shelf</Text>
+              <Text style={{ fontSize: 16, color: COLORS.cream }}>My Shelf</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={goToStatistics}
+              style={{ paddingVertical: 8,}}
+            >
+              <Text style={{ fontSize: 16, color: COLORS.cream }}>Statistics</Text>
             </TouchableOpacity>
           </View>
         </View>
