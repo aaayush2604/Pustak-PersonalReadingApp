@@ -29,12 +29,11 @@ const Home = () => {
     router.push("/statistics");
   };
 
-  // 🔍 search state
+  // 🔍 Search state
   const [searchTerm, setSearchTerm] = useState("");
   const { results, loadingSearch, searchError, searchBooks, clearResults } =
     useBookSearch();
 
-  // height of Welcome section (used to place overlay under it)
   const [welcomeHeight, setWelcomeHeight] = useState(0);
 
   const handleSearchClick = () => {
@@ -56,7 +55,8 @@ const Home = () => {
     router.push(path);
   };
 
-  const hasResults = results.length > 0 && searchTerm.trim() !== "";
+  const showSearchOverlay =
+    loadingSearch || results.length > 0 || searchError;
 
   return (
     <SafeAreaView
@@ -84,7 +84,8 @@ const Home = () => {
           headerTitle: "",
         }}
       />
-      {/* Hamburger overlay menu */}
+
+      {/* Hamburger Menu */}
       {menuOpen && (
         <View
           style={{
@@ -93,7 +94,6 @@ const Home = () => {
             left: 16,
             right: 16,
             zIndex: 20,
-            
           }}
         >
           <TouchableOpacity
@@ -103,13 +103,12 @@ const Home = () => {
               left: -16,
               right: -16,
               bottom: -1000,
-              
             }}
             onPress={() => setMenuOpen(false)}
           />
           <View
             style={{
-               backgroundColor:COLORS.tertiary,
+              backgroundColor: COLORS.tertiary,
               borderRadius: 8,
               paddingVertical: 8,
               paddingHorizontal: 12,
@@ -120,50 +119,50 @@ const Home = () => {
               elevation: 3,
             }}
           >
-            <TouchableOpacity
-              onPress={goToShelf}
-              style={{ paddingVertical: 8,}}
-            >
+            <TouchableOpacity onPress={goToShelf} style={{ paddingVertical: 8 }}>
               <Text style={{ fontSize: 16, color: COLORS.cream }}>My Shelf</Text>
             </TouchableOpacity>
+
             <TouchableOpacity
               onPress={goToStatistics}
-              style={{ paddingVertical: 8,}}
+              style={{ paddingVertical: 8 }}
             >
-              <Text style={{ fontSize: 16, color: COLORS.cream }}>Statistics</Text>
+              <Text style={{ fontSize: 16, color: COLORS.cream }}>
+                Statistics
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
       )}
 
+      {/* MAIN SCROLL VIEW */}
       <ScrollView
         showsVerticalScrollIndicator={false}
         style={{ flex: 1, width: "100%" }}
       >
         <View style={{ flex: 1, padding: SIZES.medium }}>
-          {/* Wrap Welcome so we can measure its height */}
+          {/* Capture welcome height */}
           <View
-            onLayout={(e) => {
-              setWelcomeHeight(e.nativeEvent.layout.height);
-            }}
+            onLayout={(e) =>
+              setWelcomeHeight(e.nativeEvent.layout.height)
+            }
           >
             <Welcome
               searchTerm={searchTerm}
               setSearchTerm={(text) => {
                 setSearchTerm(text);
-                if (text.trim() === "") {
-                  clearResults(); // 🔥 clear results when search is empty
-                }
+                if (text.trim() === "") clearResults();
               }}
               handleClick={handleSearchClick}
             />
           </View>
-          {/* Overlay search results BELOW Welcome, on top of the rest */}
-          {hasResults && (
+
+          {/* 🔎 SEARCH OVERLAY */}
+          {showSearchOverlay && (
             <View
               style={{
                 position: "absolute",
-                top: welcomeHeight + SIZES.medium, // just below Welcome
+                top: welcomeHeight + SIZES.medium,
                 left: SIZES.medium,
                 right: SIZES.medium,
                 zIndex: 10,
@@ -178,81 +177,86 @@ const Home = () => {
                 maxHeight: 320,
               }}
             >
+              {/* Loading state */}
               {loadingSearch && (
-                <View style={{ marginVertical: 8 }}>
+                <View
+                  style={{
+                    marginVertical: 12,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
                   <ActivityIndicator size="small" color={COLORS.primary} />
+                  <Text
+                    style={{ fontSize: 12, color: "#666", marginTop: 6 }}
+                  >
+                    Searching...
+                  </Text>
                 </View>
               )}
-              {searchError && (
+
+              {/* Error */}
+              {searchError && !loadingSearch && (
                 <Text style={{ color: "red", marginBottom: 8 }}>
                   {searchError}
                 </Text>
               )}
-              <ScrollView>
-                {results.map((item) => {
-  const coverUrl = item.coverId
-    ? `https://covers.openlibrary.org/b/id/${item.coverId}-M.jpg`
-    : "https://t4.ftcdn.net/jpg/05/05/61/73/360_F_505617309_NN1CW7diNmGXJfMicpY9eXHKV4sqzO5H.jpg";
 
-  // 🔹 Normalize author into a string safely
-  let authorText = "Unknown author";
+              {/* Results */}
+              {!loadingSearch && results.length > 0 && (
+                <ScrollView>
+                  {results.map((item) => {
+                    const coverUrl = item.coverId
+                      ? `https://covers.openlibrary.org/b/id/${item.coverId}-M.jpg`
+                      : "https://t4.ftcdn.net/jpg/05/05/61/73/360_F_505617309_NN1CW7diNmGXJfMicpY9eXHKV4sqzO5H.jpg";
 
-  if (Array.isArray(item.author)) {
-    authorText = item.author.join(", ");
-  } else if (typeof item.author === "string") {
-    authorText = item.author;
-  } else if (Array.isArray(item.authors)) {
-    // in case your hook uses `authors` instead of `author`
-    authorText = item.authors.join(", ");
-  } else if (typeof item.authors === "string") {
-    authorText = item.authors;
-  }
+                    let authorText = "Unknown author";
+                    if (Array.isArray(item.author)) authorText = item.author.join(", ");
+                    else if (typeof item.author === "string") authorText = item.author;
+                    else if (Array.isArray(item.authors)) authorText = item.authors.join(", ");
+                    else if (typeof item.authors === "string") authorText = item.authors;
 
-  return (
-    <TouchableOpacity
-      key={item.workKey + (item.editionKey || "")}
-      onPress={() => handleBookPress(item)}
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        marginBottom: 8,
-        paddingVertical: 6,
-      }}
-    >
-      <Image
-        source={{ uri: coverUrl }}
-        style={{
-          width: 40,
-          height: 60,
-          borderRadius: 4,
-          marginRight: 10,
-        }}
-      />
-      <View style={{ flex: 1 }}>
-        <Text
-          style={{ fontWeight: "600", marginBottom: 2 }}
-          numberOfLines={1}
-        >
-          {item.title}
-        </Text>
-        <Text
-          style={{ color: "#555", fontSize: 12 }}
-          numberOfLines={1}
-        >
-          {authorText}
-        </Text>
-        <Text style={{ color: "#999", fontSize: 11 }}>
-          First published: {item.firstPublishYear}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
-})}
-              </ScrollView>
+                    return (
+                      <TouchableOpacity
+                        key={item.workKey + (item.editionKey || "")}
+                        onPress={() => handleBookPress(item)}
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          marginBottom: 8,
+                          paddingVertical: 6,
+                        }}
+                      >
+                        <Image
+                          source={{ uri: coverUrl }}
+                          style={{
+                            width: 40,
+                            height: 60,
+                            borderRadius: 4,
+                            marginRight: 10,
+                          }}
+                        />
+
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontWeight: "600" }} numberOfLines={1}>
+                            {item.title}
+                          </Text>
+                          <Text style={{ color: "#555", fontSize: 12 }} numberOfLines={1}>
+                            {authorText}
+                          </Text>
+                          <Text style={{ color: "#999", fontSize: 11 }}>
+                            First published: {item.firstPublishYear}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              )}
             </View>
           )}
 
-          {/* The rest of your home content – these stay in place, under the overlay */}
+          {/* HOME CONTENT */}
           <CurrentlyReading />
           <PopularBooks />
         </View>

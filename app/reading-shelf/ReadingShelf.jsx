@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, useRouter, useFocusEffect } from "expo-router";
-import { COLORS, SIZES, icons } from "../../constants";
+import { COLORS, SIZES, icons, FONT } from "../../constants";
 import { ScreenHeaderBtn } from "../../components";
 import { useReadingStore } from "../../hook/useReadingStore";
 
@@ -105,7 +105,18 @@ const ReadingShelf = () => {
               handlePress={() => router.back()}
             />
           ),
-          headerTitle: "My Shelf",
+          headerTitle: () => (
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: "600",
+                marginLeft: 10, 
+                fontFamily:FONT.bold
+              }}
+            >
+              My Shelf
+            </Text>
+            )
         }}
       />
       <ScrollView

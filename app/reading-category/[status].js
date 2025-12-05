@@ -14,7 +14,7 @@ import {
   useFocusEffect,
 } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { COLORS, SIZES, icons } from "../../constants";
+import { COLORS, SIZES, icons, FONT } from "../../constants";
 import { ScreenHeaderBtn } from "../../components";
 import { useReadingStore } from "../../hook/useReadingStore";
 
@@ -133,8 +133,19 @@ const ReadingCategoryScreen = () => {
               handlePress={() => router.back()}
             />
           ),
-          headerTitle: title,
-        }}
+          headerTitle: () => (
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: "600",
+                marginLeft: 10, 
+                fontFamily:FONT.bold
+              }}
+            >
+              {title}
+            </Text>
+            )
+          }}
       />
 
       <ScrollView
