@@ -4,11 +4,16 @@ import * as SplashScreen from "expo-splash-screen";
 import { useCallback, useEffect } from "react";
 import { ToastProvider } from "expo-toast";
 import "react-native-reanimated";
-
+import CustomSplash from "../components/CustomSplash";
 
 SplashScreen.preventAutoHideAsync();
 
 const Layout = () => {
+
+  // useEffect(() => {
+  //   SplashScreen.preventAutoHideAsync();
+  // }, []);
+
   const [fontsLoaded] = useFonts({
     DMBold: require("../assets/fonts/DMSans-Bold.ttf"),
     DMRegular: require("../assets/fonts/DMSans-Regular.ttf"),
