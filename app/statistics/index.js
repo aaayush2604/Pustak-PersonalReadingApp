@@ -1,14 +1,22 @@
 // app/statistics.js
 import React, { useMemo, useState } from "react";
-import { View, Text, ScrollView, TouchableOpacity, Dimensions } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  Dimensions,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack } from "expo-router";
 import { LineChart } from "react-native-chart-kit";
 
 import { COLORS, SIZES } from "../../constants";
 import { useReadingStore } from "../../hook/useReadingStore";
+import { generateMockReadingData } from "../../utils/sampleReadingData";
 
 const screenWidth = Dimensions.get("window").width;
+const __DEV_DATA__ = true;
 
 // Helper to format x-axis labels
 const formatDateLabel = (d) => {
@@ -17,7 +25,18 @@ const formatDateLabel = (d) => {
 };
 
 export const Statistics = () => {
-  const { readingSessions = [], finishedBooks = [] } = useReadingStore();
+  const realStore = useReadingStore();
+
+  const mock = useMemo(() => generateMockReadingData(), []);
+
+  const readingSessions = __DEV_DATA__
+    ? mock.readingSessions
+    : realStore.readingSessions || [];
+
+  const finishedBooks = __DEV_DATA__
+    ? mock.finishedBooks
+    : realStore.finishedBooks || [];
+
   const [selectedWorkKey, setSelectedWorkKey] = useState(null);
 
   // ---- GLOBAL graph ----
@@ -49,7 +68,9 @@ export const Statistics = () => {
   const bookData = useMemo(() => {
     if (!selectedWorkKey || readingSessions.length === 0) return [];
 
-    const filtered = readingSessions.filter((s) => s.workKey === selectedWorkKey);
+    const filtered = readingSessions.filter(
+      (s) => s.workKey === selectedWorkKey
+    );
     const byDate = {};
 
     filtered.forEach((s) => {
@@ -65,7 +86,8 @@ export const Statistics = () => {
       }));
   }, [readingSessions, selectedWorkKey]);
 
-  const selectedBook = finishedBooks.find((b) => b.workKey === selectedWorkKey) || null;
+  const selectedBook =
+    finishedBooks.find((b) => b.workKey === selectedWorkKey) || null;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.lightWhite }}>
@@ -82,13 +104,37 @@ export const Statistics = () => {
         contentContainerStyle={{ padding: SIZES.medium }}
         showsVerticalScrollIndicator={false}
       >
+        {__DEV_DATA__ && (
+          <View
+            style={{
+              backgroundColor: "#FFF4CC",
+              borderRadius: 6,
+              paddingVertical: 6,
+              paddingHorizontal: 10,
+              marginBottom: 14,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 12,
+                color: "#8A6D3B",
+                textAlign: "center",
+              }}
+            >
+              Showing sample data (development mode)
+            </Text>
+          </View>
+        )}
+
         {/* GLOBAL GRAPH */}
         <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 8 }}>
           Reading activity (last 30 days)
         </Text>
 
         {globalData.length === 0 ? (
-          <Text style={{ marginBottom: 20 }}>No reading sessions recorded yet.</Text>
+          <Text style={{ marginBottom: 20 }}>
+            No reading sessions recorded yet.
+          </Text>
         ) : (
           <LineChart
             data={{
@@ -115,30 +161,40 @@ export const Statistics = () => {
         )}
 
         {/* BOOK LIST */}
-        <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 8 }}>Books</Text>
+        <Text style={{ fontSize: 18, fontWeight: "bold", marginBottom: 8 }}>
+          Books
+        </Text>
 
         {finishedBooks.length === 0 ? (
-          <Text style={{ marginBottom: 20 }}>You haven't finished any books yet.</Text>
+          <Text style={{ marginBottom: 20 }}>
+            You haven't finished any books yet.
+          </Text>
         ) : (
           <View style={{ marginBottom: 24 }}>
             {finishedBooks.map((book) => (
               <TouchableOpacity
                 key={book.workKey}
                 onPress={() =>
-                  setSelectedWorkKey((prev) => (prev === book.workKey ? null : book.workKey))
+                  setSelectedWorkKey((prev) =>
+                    prev === book.workKey ? null : book.workKey
+                  )
                 }
                 style={{
                   paddingVertical: 8,
                   paddingHorizontal: 10,
                   marginBottom: 6,
                   borderRadius: 6,
-                  backgroundColor: selectedWorkKey === book.workKey ? COLORS.tertiary : "white",
+                  backgroundColor:
+                    selectedWorkKey === book.workKey
+                      ? COLORS.tertiary
+                      : "white",
                 }}
               >
                 <Text
                   style={{
                     fontWeight: "600",
-                    color: selectedWorkKey === book.workKey ? "white" : "#222",
+                    color:
+                      selectedWorkKey === book.workKey ? "white" : "#222",
                   }}
                   numberOfLines={1}
                 >
@@ -147,7 +203,8 @@ export const Statistics = () => {
                 <Text
                   style={{
                     fontSize: 12,
-                    color: selectedWorkKey === book.workKey ? "#eee" : "#555",
+                    color:
+                      selectedWorkKey === book.workKey ? "#eee" : "#555",
                   }}
                 >
                   {book.authors?.join(", ") || "Unknown author"}
@@ -160,8 +217,11 @@ export const Statistics = () => {
         {/* BOOK GRAPH */}
         {selectedWorkKey && (
           <View style={{ marginBottom: 40 }}>
-            <Text style={{ fontSize: 16, fontWeight: "bold", marginBottom: 8 }}>
-              Pages read per day — {selectedBook ? selectedBook.title : "Selected book"}
+            <Text
+              style={{ fontSize: 16, fontWeight: "bold", marginBottom: 8 }}
+            >
+              Pages read per day —{" "}
+              {selectedBook ? selectedBook.title : "Selected book"}
             </Text>
 
             {bookData.length === 0 ? (
@@ -179,8 +239,12 @@ export const Statistics = () => {
                   backgroundGradientFrom: "#fff",
                   backgroundGradientTo: "#fff",
                   decimalPlaces: 0,
-                  color: (opacity = 1) => `${COLORS.tertiary}${Math.floor(opacity * 255).toString(16)}`,
-                  labelColor: (o = 1) => `rgba(80, 80, 80, ${o})`,
+                  color: (opacity = 1) =>
+                    `${COLORS.tertiary}${Math.floor(
+                      opacity * 255
+                    ).toString(16)}`,
+                  labelColor: (o = 1) =>
+                    `rgba(80, 80, 80, ${o})`,
                 }}
                 bezier
                 style={{ borderRadius: 8 }}
