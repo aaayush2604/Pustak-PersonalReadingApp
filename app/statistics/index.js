@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 
 import { COLORS, SIZES } from "../../constants";
 import { useReadingStore } from "../../hook/useReadingStore";
@@ -17,9 +17,10 @@ import { BOOK_COLOR_PALETTE } from "../../constants/chartColors";
 import GlobalReadingChart from "./GlobalReadingChart";
 import BookReadingChart from "./BookReadingChart";
 
-const __DEV_DATA__ = true;
+const __DEV_DATA__ = __DEV__;
 
 export default function Statistics() {
+  const router = useRouter();
   const realStore = useReadingStore();
   const mock = useMemo(() => generateMockReadingData(), []);
 
@@ -223,6 +224,21 @@ export default function Statistics() {
         contentContainerStyle={{ padding: SIZES.medium }}
         showsVerticalScrollIndicator={false}
       >
+
+        <TouchableOpacity
+          onPress={() => router.push("/statistics/Sessions")}
+          style={{
+            padding: 12,
+            borderRadius: 8,
+            backgroundColor: COLORS.tertiary,
+            marginBottom: 12,
+          }}
+        >
+          <Text style={{ color: "#fff", fontWeight: "600", textAlign: "center" }}>
+            View reading sessions
+          </Text>
+        </TouchableOpacity>
+
         {__DEV_DATA__ && (
           <View
             style={{

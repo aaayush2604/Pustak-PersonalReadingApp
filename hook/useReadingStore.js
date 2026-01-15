@@ -5,6 +5,8 @@ import {
   loadReadingState,
   saveReadingState,
 } from "../storage/readingStorage";
+import { nanoid } from "nanoid/non-secure";
+
 
 // ------------------ HELPERS ------------------
 
@@ -59,6 +61,11 @@ export const useReadingStore = () => {
 
       const loaded = await loadReadingState();
 
+      const fixedSessions = (loaded.readingSessions || []).map((s) => ({
+        ...s,
+        id: s.id ?? nanoid(), // 👈 generate if missing
+      }));
+
       const normalized = {
         ...loaded,
         tbrBooks: (loaded.tbrBooks || []).map((b) => ({
@@ -75,14 +82,18 @@ export const useReadingStore = () => {
               authors: normalizeAuthors(loaded.currentlyReading.authors),
             }
           : null,
-        readingSessions: loaded.readingSessions || [],
+        readingSessions: fixedSessions,
       };
 
       setState(normalized);
+
+      // 🔥 persist the fix so it’s permanent
+      await saveReadingState(normalized);
     } finally {
       setLoading(false);
     }
   }, []);
+
 
   useEffect(() => {
     reload();
@@ -138,6 +149,7 @@ export const useReadingStore = () => {
         const cleaned = removeEverywhere(prev, b.workKey);
 
         const already = cleaned.currentlyReading?.workKey === b.workKey;
+        const previous=prev.finishedBooks.find(x => x.workKey === b.workKey) ?? prev.currentlyReading;
 
         return {
           ...cleaned,
@@ -149,6 +161,7 @@ export const useReadingStore = () => {
             coverUrl: b.coverUrl,
             totalPages: b.totalPages,
             currentPage: b.currentPage ?? 0,
+            lastSyncedPage: previous?.lastSyncedPage ?? b.currentPage ?? 0,
             startedAt: already
               ? cleaned.currentlyReading.startedAt
               : now,
@@ -171,12 +184,24 @@ export const useReadingStore = () => {
         const today = now.slice(0, 10);
 
         const prevPage = prev.currentlyReading.currentPage;
+        const prevSynced=prev.currentlyReading.lastSyncedPage??0;
         const newPage =
           currentPage === "" || currentPage === undefined
             ? prevPage
             : Number(currentPage);
 
-        const pagesRead = Math.max(newPage - prevPage, 0);
+        if (newPage < prev.currentlyReading.lastSyncedPage) {
+          return {
+            ...prev,
+            currentlyReading: {
+              ...prev.currentlyReading,
+              currentPage: newPage,
+              lastUpdatedAt: now,
+            },
+          };
+        }
+
+        const pagesRead = Math.max(newPage - prevSynced, 0);
 
         let sessions = [...prev.readingSessions];
 
@@ -194,6 +219,7 @@ export const useReadingStore = () => {
             };
           } else {
             sessions.unshift({
+              id: nanoid(),
               workKey: prev.currentlyReading.workKey,
               date: today,
               pagesRead,
@@ -206,6 +232,8 @@ export const useReadingStore = () => {
           currentlyReading: {
             ...prev.currentlyReading,
             currentPage: newPage,
+            lastSyncedPage:
+              pagesRead > 0 ? newPage : prev.currentlyReading.lastSyncedPage,
             totalPages: totalPages ?? prev.currentlyReading.totalPages,
             lastUpdatedAt: now,
           },
@@ -266,7 +294,7 @@ export const useReadingStore = () => {
             pagesRead: sessions[idx].pagesRead + pagesRead,
           };
         } else {
-          sessions.unshift({ workKey, date: today, pagesRead });
+          sessions.unshift({id: nanoid(), workKey, date: today, pagesRead });
         }
 
         return { ...prev, readingSessions: sessions };
@@ -274,6 +302,15 @@ export const useReadingStore = () => {
     },
     [updateState]
   );
+
+  const deleteReadingSession = useCallback((id) => {
+    updateState((prev) => ({
+      ...prev,
+      readingSessions: prev.readingSessions.filter(
+        (s) => s.id !== id
+      ),
+    }));
+  }, [updateState]);
 
   // ------------------ EXPORT ------------------
 
@@ -287,5 +324,6 @@ export const useReadingStore = () => {
     updateProgress,
     finishCurrentBook,
     addReadingSession,
+    deleteReadingSession,
   };
 };

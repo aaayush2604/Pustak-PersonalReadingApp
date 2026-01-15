@@ -17,7 +17,7 @@ export default function GlobalReadingChart({ segments }) {
   return (
     <VictoryChart
       height={320}
-      padding={{ top: 20, bottom: 50, left: 25, right: 25 }}
+      padding={{ top: 20, bottom: 50, left: 32, right: 25 }}
       scale={{ x: "time" }}
     >
       <VictoryAxis

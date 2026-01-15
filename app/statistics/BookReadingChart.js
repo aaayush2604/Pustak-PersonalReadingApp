@@ -13,7 +13,7 @@ export default function BookReadingChart({ title, data,color }) {
   }
 
   return (
-    <View style={{ marginTop: 24 }}>
+    <View style={{ marginTop: 24, paddingLeft:16 }}>
       <Text style={{ fontSize: 16, fontWeight: "bold", marginBottom: 8 }}>
         Pages read per day — {title}
       </Text>
